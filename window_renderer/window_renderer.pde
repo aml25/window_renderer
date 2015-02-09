@@ -7,49 +7,85 @@ import java.awt.Toolkit;
 import java.awt.Dimension;
 
 Dimension screenSize;
-Draggable[] vertexPoints = new Draggable[9];
+
+ArrayList<Draggable> vertices = new ArrayList<Draggable>();
+
 PGraphics render;
 Rectangle screen;
 BufferedImage screenCapture;
 PImage screenTexture;
 Robot screenCap;
 
+boolean calibrate;
+
+PImage cursor;
+
+int gridCellCount = 2;
+int oneDimension = gridCellCount + 1;
+
 void setup(){
   screenSize = Toolkit.getDefaultToolkit().getScreenSize();
   println(screenSize);
-  size( (int) screenSize.getWidth(),  (int) screenSize.getHeight(), P2D);
+  size( (int) screenSize.getWidth()/2,  (int) screenSize.getHeight()/2, P3D);
   
-  render = createGraphics(width, height, P2D);
+  
+  cursor = loadImage("cursor.png");
+  
+  render = createGraphics(width, height, P3D);
   render.fill(255,255,0);
   render.stroke(255);
   
-  textureMode(IMAGE);
+  textureMode(NORMAL);
   
-  vertexPoints[0] = new Draggable(0,0);
-  vertexPoints[1] = new Draggable(width*.5,0);
-  vertexPoints[2] = new Draggable(width,0);
-  
-  vertexPoints[3] = new Draggable(width,height*.5);
-  vertexPoints[4] = new Draggable(width*.5,height*.5);
-  vertexPoints[5] = new Draggable(0,height*.5);
-  
-  vertexPoints[6] = new Draggable(width,height);
-  vertexPoints[7] = new Draggable(width/2,height);
-  vertexPoints[8] = new Draggable(0,height);
-  
+  println(width + ", " + height);
+  float xSpace = width/gridCellCount;
+  float ySpace = height/gridCellCount;
+  for(int y=0;y<=gridCellCount;y++){
+    float coordY = y * ySpace;
+    for(int x=0;x<=gridCellCount;x++){
+      float coordX = x * xSpace;
+      vertices.add(new Draggable(coordX, coordY));
+      println("coord at: " + coordX + ", " + coordY);
+    }
+  }
   noStroke();
   
   try{
     screenCap = new Robot();
     screen = new Rectangle(screenSize);
-    println("got the screen");
   }
   catch(Exception e){
     e.printStackTrace();
   }
 }
 
+void drawVertex(Draggable currVertex){
+  float u;
+  float v;
+  if(currVertex.originalX == 0){ //if on the left of the screen
+    u = 0;  
+  }
+  else if(currVertex.originalX == width){ //if on the right of the screen
+    u = 1;
+  }
+  else{ //somewhere in the middle
+    u = map(currVertex.originalX, 0, width, 0, 1);
+  }
+  
+  if(currVertex.originalY == 0){ //if on the top of the screen
+    v = 0;  
+  }
+  else if(currVertex.originalY == height){ //if on the bottom of the screen
+    v = 1;  
+  }
+  else{ //somewhere in the middle
+    v = map(currVertex.originalY, 0, height, 0, 1);
+  }
+  vertex(currVertex.x, currVertex.y, u, v);  
+}
+
 void draw(){
+  //println(frameRate);
   background(0);
   
   try{
@@ -65,45 +101,94 @@ void draw(){
     //render.background(0);
     render.image(screenTexture,0,0);
     
-    render.ellipse(x,y,10,10);
+    render.image(cursor, x,y);
     render.endDraw();
     
-    //I know the U value is not correct.  but as long as I don't squish on the edges, it should be right
-    beginShape();
-    
+    /*beginShape();
     texture(render);
-    vertex(vertexPoints[0].x, vertexPoints[0].y, 0, 0);
-    vertex(vertexPoints[1].x, vertexPoints[1].y, vertexPoints[1].x, 0);
-    vertex(vertexPoints[2].x, vertexPoints[2].y, width, 0);
-    
-    vertex(vertexPoints[3].x, vertexPoints[3].y, width, render.height*.5);
-    vertex(vertexPoints[4].x, vertexPoints[4].y, vertexPoints[4].x, render.height*.5);
-    vertex(vertexPoints[5].x, vertexPoints[5].y, 0, render.height*.5);
-    
-    vertex(vertexPoints[5].x, vertexPoints[5].y, 0, render.height*.5);
-    vertex(vertexPoints[4].x, vertexPoints[4].y, vertexPoints[4].x, render.height*.5);
-    vertex(vertexPoints[3].x, vertexPoints[3].y, width, render.height*.5);
-    
-    vertex(vertexPoints[6].x, vertexPoints[6].y, width, render.height);
-    vertex(vertexPoints[7].x, vertexPoints[7].y, vertexPoints[7].x, render.height);
-    vertex(vertexPoints[8].x, vertexPoints[8].y, 0, render.height);
-    endShape();
-    
-    for(int i=0;i<vertexPoints.length;i++){
-      if(vertexPoints[i] != null){
-        vertexPoints[i].drawDraggable();  
+    for(int i=0;i<vertices.size();i++){
+      //println(i);
+      
+      //this finds the start of a row that's NOT the first or last row
+      if(i % oneDimension == 0 && i != 0 && i != vertices.size() - oneDimension){
+        for(int u=i+oneDimension-1;u>=i;u--){
+          drawVertex(vertices.get(u));
+        }
       }
-    }    
+      ///////////////////////////////////////////////////////////////
+      
+      //if we are the start of the last row, interject and reverse the order of the count
+      if(i >= vertices.size() - oneDimension){
+        drawVertex(vertices.get(vertices.size() - 1 - ((i + oneDimension) - vertices.size())));
+      }
+      //otherwise just draw like normal
+      else{
+        //println("drawing vertex index: " + i);
+        drawVertex(vertices.get(i));
+      }
+    }
+    endShape();*/
+    
+    beginShape(TRIANGLES);
+    texture(render);
+    drawVertex(vertices.get(0));
+    drawVertex(vertices.get(1));
+    drawVertex(vertices.get(3));
+    
+    drawVertex(vertices.get(1));
+    drawVertex(vertices.get(3));
+    drawVertex(vertices.get(4));
+    
+    drawVertex(vertices.get(1));
+    drawVertex(vertices.get(2));
+    drawVertex(vertices.get(4));
+    
+    drawVertex(vertices.get(2));
+    drawVertex(vertices.get(4));
+    drawVertex(vertices.get(5));
+    
+    ////////////////////////////
+    
+    drawVertex(vertices.get(3));
+    drawVertex(vertices.get(4));
+    drawVertex(vertices.get(6));
+    
+    drawVertex(vertices.get(4));
+    drawVertex(vertices.get(6));
+    drawVertex(vertices.get(7));
+    
+    drawVertex(vertices.get(4));
+    drawVertex(vertices.get(5));
+    drawVertex(vertices.get(7));
+    
+    drawVertex(vertices.get(5));
+    drawVertex(vertices.get(7));
+    drawVertex(vertices.get(8));
+    
+    
+    endShape(CLOSE);
+    
+    for(int i=0;i<vertices.size();i++){
+      if(vertices.get(i) != null){
+        vertices.get(i).drawDraggable();  
+      }
+    }  
   }
   catch( Exception e){
     e.printStackTrace();
   }
 }
 
+void keyPressed(){
+  if(key == 'c'){ //calibrate toggle
+    calibrate = !calibrate;
+  }  
+}
+
 void mousePressed(){
-  for(int i=0;i<vertexPoints.length;i++){
-    if(vertexPoints[i].hovered){
-      vertexPoints[i].dragging = true;
+  for(int i=0;i<vertices.size();i++){
+    if(vertices.get(i).hovered){
+      vertices.get(i).dragging = true;
       println(i);
       break;  
     }
@@ -116,11 +201,12 @@ void mouseMoved(){
 }
 
 void mouseReleased(){
-  for(int i=0;i<vertexPoints.length;i++){
-    if(vertexPoints[i].hovered){
-      vertexPoints[i].dragging = false;
+  for(int i=0;i<vertices.size();i++){
+    if(vertices.get(i).hovered){
+      vertices.get(i).dragging = false;
       break;
     }
   }
+  
   noCursor();
 }

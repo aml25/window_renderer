@@ -1,21 +1,30 @@
 class Draggable{
   
   float x;
+  float originalX;
   float y;
+  float originalY;
   boolean dragging = false;
   boolean hovered = false;
-  int radius = 100;
+  int radius = 50;
   
   Draggable(float myX, float myY){
     x = myX;
+    originalX = x;
     y = myY;
+    originalY = y;
   }
   
   void drawDraggable(){
     mouseInside();
-    if(hovered){
+    if(calibrate){
       ellipseMode(CENTER);
-      fill(255,0,255);
+      if(hovered){
+        fill(60,100,255);  
+      }
+      else{
+        fill(255,0,255);
+      }
       ellipse(x, y, radius,radius);
       fill(0);
       ellipse(x, y, 5, 5);
