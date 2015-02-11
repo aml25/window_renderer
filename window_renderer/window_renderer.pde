@@ -23,10 +23,12 @@ PImage cursor;
 int gridCellCount = 2;
 int oneDimension = gridCellCount + 1;
 
+int scale = 2;
+
 void setup(){
   screenSize = Toolkit.getDefaultToolkit().getScreenSize();
   println(screenSize);
-  size( (int) screenSize.getWidth()/2,  (int) screenSize.getHeight()/2, P3D);
+  size( (int) screenSize.getWidth()/scale,  (int) screenSize.getHeight()/scale, P3D);
   
   
   cursor = loadImage("cursor.png");
@@ -84,96 +86,65 @@ void drawVertex(Draggable currVertex){
   vertex(currVertex.x, currVertex.y, u, v);  
 }
 
+void captureScreen(){
+  screenTexture = new PImage(screenCap.createScreenCapture(screen));
+  //screenCapture = screenCap.createScreenCapture(screen);
+}
+
 void draw(){
   //println(frameRate);
   background(0);
   
   try{
     
-    screenCapture = screenCap.createScreenCapture(screen);
-    
-    screenTexture = new PImage(screenCapture);
-    
-    int x = MouseInfo.getPointerInfo().getLocation().x;
-    int y = MouseInfo.getPointerInfo().getLocation().y;
-    
-    render.beginDraw();
-    //render.background(0);
-    render.image(screenTexture,0,0);
-    
-    render.image(cursor, x,y);
-    render.endDraw();
-    
-    /*beginShape();
-    texture(render);
-    for(int i=0;i<vertices.size();i++){
-      //println(i);
+    //thread("captureScreen");
+    captureScreen();
+    //if(screenCapture != null){
+      //screenTexture = new PImage(screenCapture);
+      //screenCapture = null;
       
-      //this finds the start of a row that's NOT the first or last row
-      if(i % oneDimension == 0 && i != 0 && i != vertices.size() - oneDimension){
-        for(int u=i+oneDimension-1;u>=i;u--){
-          drawVertex(vertices.get(u));
+      int x = MouseInfo.getPointerInfo().getLocation().x;
+      int y = MouseInfo.getPointerInfo().getLocation().y;
+      
+      render.beginDraw();
+      //render.background(0);
+      render.image(screenTexture,0,0);
+      
+      render.image(cursor, x,y);
+      render.endDraw();
+      
+      beginShape(TRIANGLES);
+      texture(render);
+      
+      for(int i=0;i<vertices.size();i++){
+        if(i % (oneDimension) == gridCellCount){ //find the last one in the row, not the first
+          //println(i);
+        }
+        else{
+          if(i < vertices.size() - oneDimension){
+            //println("drawing vertex for index: " + i + "," + (i+3) + ", " + (i+4));
+            drawVertex(vertices.get(i));
+            drawVertex(vertices.get(i+oneDimension));
+            drawVertex(vertices.get(i+(oneDimension + 1)));
+            
+            //println("drawing vertex for index: " + i + "," + (i+1) + ", " + (i+4));
+            drawVertex(vertices.get(i));
+            drawVertex(vertices.get(i+1));
+            drawVertex(vertices.get(i+(oneDimension + 1)));
+            //println("------------------------------------------------");
+          }
         }
       }
-      ///////////////////////////////////////////////////////////////
       
-      //if we are the start of the last row, interject and reverse the order of the count
-      if(i >= vertices.size() - oneDimension){
-        drawVertex(vertices.get(vertices.size() - 1 - ((i + oneDimension) - vertices.size())));
-      }
-      //otherwise just draw like normal
-      else{
-        //println("drawing vertex index: " + i);
-        drawVertex(vertices.get(i));
+      endShape(CLOSE);
+      
+      for(int i=0;i<vertices.size();i++){
+        if(vertices.get(i) != null){
+          vertices.get(i).drawDraggable();  
+        }
       }
     }
-    endShape();*/
-    
-    beginShape(TRIANGLES);
-    texture(render);
-    drawVertex(vertices.get(0));
-    drawVertex(vertices.get(1));
-    drawVertex(vertices.get(3));
-    
-    drawVertex(vertices.get(1));
-    drawVertex(vertices.get(3));
-    drawVertex(vertices.get(4));
-    
-    drawVertex(vertices.get(1));
-    drawVertex(vertices.get(2));
-    drawVertex(vertices.get(4));
-    
-    drawVertex(vertices.get(2));
-    drawVertex(vertices.get(4));
-    drawVertex(vertices.get(5));
-    
-    ////////////////////////////
-    
-    drawVertex(vertices.get(3));
-    drawVertex(vertices.get(4));
-    drawVertex(vertices.get(6));
-    
-    drawVertex(vertices.get(4));
-    drawVertex(vertices.get(6));
-    drawVertex(vertices.get(7));
-    
-    drawVertex(vertices.get(4));
-    drawVertex(vertices.get(5));
-    drawVertex(vertices.get(7));
-    
-    drawVertex(vertices.get(5));
-    drawVertex(vertices.get(7));
-    drawVertex(vertices.get(8));
-    
-    
-    endShape(CLOSE);
-    
-    for(int i=0;i<vertices.size();i++){
-      if(vertices.get(i) != null){
-        vertices.get(i).drawDraggable();  
-      }
-    }  
-  }
+  //}
   catch( Exception e){
     e.printStackTrace();
   }
